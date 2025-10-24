@@ -1,0 +1,52 @@
+import os
+import time
+from datetime import datetime
+import pandas as pd
+
+try:
+    import schedule
+except ModuleNotFoundError:
+    import subprocess
+    import sys
+    print("Installing 'schedule' module...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "schedule"])
+    import schedule
+
+CSV_FILE = "top_30_data.csv"
+
+def scrape_top_30():
+  
+    data = []
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    for i in range(1, 31):
+        data.append({
+            "Rank": i,
+            "Name": f"Item {i}",
+            "Value": round(1000/i, 2),
+            "Timestamp": current_time
+        })
+    return data
+
+def update_csv():
+    """Fetches top 30 data and updates the CSV file."""
+    print("\n Running scraper and updating CSV...")
+    scraped_data = scrape_top_30()
+
+    df = pd.DataFrame(scraped_data)
+    df.to_csv(CSV_FILE, index=False)
+    print(f" CSV updated successfully at {datetime.now().strftime('%H:%M:%S')}\n")
+
+def run_scheduler():
+    """Runs the scraper every 30 minutes automatically."""
+    X = 30  
+    schedule.every(X).minutes.do(update_csv)
+    print(f" Auto-Updater started! CSV will refresh every {X} minutes.\n")
+    update_csv()
+
+    while True:
+        schedule.run_pending()
+        print(" Waiting for the next scheduled update...", end="\r")
+        time.sleep(5)
+
+if __name__ == "__main__":
+    run_scheduler()
